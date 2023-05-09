@@ -7,12 +7,12 @@ from translate import Translator
 
 product_code =input("Please enter product code:")
 print(product_code)
-url = f"https://ww.ceneo.pl/{product_code}#tab=reviews"
+url = f"https://www.ceneo.pl/{product_code}#tab=reviews"
 
 def get_element(dom_tree, selector=None, attribute=None, return_list = None):
     try:
         if return_list:
-            return ", ".join([tag.text.strip() for tag in dom_tree.select("div.review-feature__col:has( > div.review-feature__title--positives) > div.review-feature__item")])
+            return ", ".join([tag.text.strip() for tag in dom_tree.select(selector)])
         if attribute:
             if selector:
                 return dom_tree.select_one(selector)[attribute].strip()
@@ -28,18 +28,18 @@ def clean_text(text):
 all_opinions =[]
 
 selectors = {
-                    "opinion_id": [None, "data-entry-id"],
-                    "author": ["span.user-post__author-name"],
-                    "recommendation": ["span.user-post__author-recommendation > em"],
-                    "score": ["span.user-post__score-count"],
-                    "description": ["div.user-post__text"],
-                    "pros": ["div.review-feature__col:has( > div.review-feature__title--positives) > div.review-feature__item",None, True],
-                    "cons": ["div.review-feature__col:has( > div.review-feature__title--negatives) > div.review-feature__item"],
-                    "like": ["button.vote-yes > span"],
-                    "dislike": ["button.vote-yes > span"],
-                    "publish_date": ["span.user-post__published > time:nth-child(1)", "datetime"],
-                    "purchase_date": ["span.user-post__published > time:nth-child(2)", "datetime"]
-                }
+    "opinion_id": [None, "data-entry-id"],
+    "author": ["span.user-post__author-name"],
+    "recommendation": ["span.user-post__author-recommendation > em"],
+    "score": ["span.user-post__score-count"],
+    "description": ["div.user-post__text"],
+    "pros": ["div.review-feature__col:has( > div.review-feature__title--positives) > div.review-feature__item",None, True],
+    "cons": ["div.review-feature__col:has( > div.review-feature__title--negatives) > div.review-feature__item",None, True],
+    "like": ["button.vote-yes > span"],
+    "dislike": ["button.vote-yes > span"],
+    "publish_date": ["span.user-post__published > time:nth-child(1)", "datetime"],
+    "purchase_date": ["span.user-post__published > time:nth-child(2)", "datetime"]
+}
 from_lang = 'pl'
 to_lang = "eng"
 translator = Translator(from_lang, to_lang)
@@ -56,7 +56,6 @@ while url:
         
         if len(opinions) > 0:
             print(f"There are opinions about product with {product_code} code.")
-
             for opinion in opinions:
 
                 # opinion_id = opinion["data-entry-id"]
@@ -88,13 +87,12 @@ while url:
 
 
                 all_opinions.append(single_opinion)
-            
-            
-                next_page = get_element(page_dom,"a.pagination__next", "href")
-                url = f"https://www.ceneo.pl/{next_page}"
-                print(url)
-
-            
+            next_page = get_element(page_dom,"a.pagination__next", "href")
+            if next_page:
+                url = f"https://www.ceneo.pl{next_page}"
+            else:
+                url = None
+            print(url)
         else:
             print(f"There are no opinions about produsct {product_code} code")
             url = None
@@ -102,10 +100,10 @@ while url:
         print("The product does not exist")
         url = None
     
-    if len(all_opinions) > 0:
-        if not os.path.exists("./opinions"):
-            os.mkdir("./opinions")
-        with open(f"./opinions/{product_code}.json", "w", encoding = "UTF-8") as jf:
-            json.dumb(all_opinions, jf, indent = 4, ensure_ascii = False)
+if len(all_opinions) > 0:
+    if not os.path.exists("./opinions"):
+        os.mkdir("./opinions")
+    with open(f"./opinions/{product_code}.json", "w", encoding = "UTF-8") as jf:
+        json.dump(all_opinions, jf, indent = 4, ensure_ascii = False)
     
             
